@@ -94,6 +94,7 @@ will be defined."
 	  (t
 	   (format t "~D hours~%" (/ elapsed 60.0 60.0))))))
 
+(defvar *failed-tests* nil)
 
 (defun run-tests (&key ((:tests *tests*) *tests*) ((:break-on-error *break-on-error*) *break-on-error*))
   "Run all the defined tests, and print a report.  If :TESTS is
@@ -113,9 +114,13 @@ test."
 								  (length names)))
 							  (group-by *tests* :key #'symbol-package)))
     (dolist (*current-test* *tests*)
+      (setf *failed-tests* (remove *current-test* *failed-tests* :test #'eq))
       (block break
-	(labels ((handle-assertion-error (e)
+	(labels ((register-fail ()
+		   (pushnew *current-test* *failed-tests* :test #'eq))
+		 (handle-assertion-error (e)
 		   (declare (type test-error e))
+		   (register-fail)
 		   (format t "  Error:  ~A~%" (test-condition-code e))
 		   (format t "    Msg:  ~A~%" (test-condition-error e))
 		   (push e errors)
@@ -123,6 +128,7 @@ test."
 		   (return-from break))
 		 (handle-error (e)
 		   (declare (type error e))
+		   (register-fail)
 		   (unless *break-on-error*
 		     (handle-assertion-error
 		      (make-condition 'test-error
@@ -130,6 +136,7 @@ test."
 				      :code `(,*current-test*)))))
 		 (handle-fail (f)
 		   (declare (type test-fail f))
+		   (register-fail)
 		   (format t "  Failed: ~S~%" (test-condition-code f))
 		   (mapcar (lambda (operand arg)
 			     (unless (equal operand arg)
@@ -154,6 +161,10 @@ test."
 	    (funcall *current-test*)
 	    (format t "Finished: ~A~%" (encode-time))))))
     (test-report tests-start num-pass failed errors)))
+
+(defun run-failed-tests (&key ((:break-on-error *break-on-error*) *break-on-error*))
+  "Run the tests which are known failures"
+  (run-tests :tests *failed-tests*))
 
 (defun run-1-test (test-name &key ((:break-on-error *break-on-error*) *break-on-error*))
   "Run one test and print a report."
