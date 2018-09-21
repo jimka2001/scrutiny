@@ -38,9 +38,9 @@
     (assert-false (< a b)))
   (let ((a "abc")
 	(b "ABCD"))
-    (assert-true (string-equal a b))
+    (assert-false (string-equal a b))
     (assert-true (string-equal (concatenate 'string a b)
-			       (format nil "~A ~A" b a))))
+			       (format nil "~A~A" a b))))
   (assert-error error
 		(error "some error"))
 )
