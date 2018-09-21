@@ -120,12 +120,10 @@ test."
 	(num-tests (length *tests*))
 	(tests-start (get-universal-time))
 	(test-num 0))
-    (format t "Running tests from packages: ~A~%" (let (packages)
-						    (dolist (test *tests*)
-						      (when (symbol-package test)
-							(pushnew (package-name (symbol-package test)) packages
-								 :test #'string=)))
-						    packages))
+    (format t "Running tests from packages: ~A~%" (mapcar (lambda (arg &aux (package (car arg)) (names (cadr arg)))
+							    (list (package-name package)
+								  (length names)))
+							  (group-by *tests* :key #'symbol-package)))
     (dolist (*current-test* *tests*)
       (block break
 	(labels ((handle-assertion-error (e)
