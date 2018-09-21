@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-Slime-friendly Unit testing package, based loosely on lisp-unit (https://github.com/OdonataResearchLLC/lisp-unit). 
+Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.com/OdonataResearchLLC/lisp-unit). 
 
 ## API
     
