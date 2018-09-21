@@ -273,7 +273,7 @@ raised."
 		      :test (lambda (type object)
 			      (typep object type)))))
 
-(defun shadow-all-symbols (&key package-from package-into)
+(defun shadow-all-symbols (&key package-from package-into (verbose nil))
   (declare (type (or package keyword) package-from package-into))
   (let ((package-into (or (find-package  package-into)
                           (error "cannot find package ~A" package-into)))
@@ -288,11 +288,13 @@ raised."
                    (or (not (find-symbol (symbol-name symbol) package-into))
                        (not (eq (find-symbol (symbol-name symbol) package-from)
                                 (find-symbol (symbol-name symbol) package-into)))))
-          (format t "importing name=~S into ~S " symbol package-into)
+          (when verbose
+	    (format t "importing name=~S into ~S " symbol package-into))
           (shadowing-import symbol package-into)
-          (unless (equal '(:internal) (cdr (multiple-value-list (find-symbol (symbol-name symbol) package-into))))
-           (format t "~S~%" (cdr (multiple-value-list (find-symbol (symbol-name symbol) package-into)))))
-          (format t "~%")
+          (when verbose
+	    (unless (equal '(:internal) (cdr (multiple-value-list (find-symbol (symbol-name symbol) package-into))))
+	      (format t "~S~%" (cdr (multiple-value-list (find-symbol (symbol-name symbol) package-into)))))
+	    (format t "~%"))
           )))
     (let (names)
       (do-symbols (symbol package-from)
