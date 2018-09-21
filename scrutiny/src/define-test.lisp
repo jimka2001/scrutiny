@@ -312,22 +312,4 @@ raised."
 
 
 
-(define-test scrutiny-1
-  (assert-false (= 1 2))
-  (assert-false (= 1 3))
-  (assert-true (= 1 1))
-  (assert-true (= 2 2))
-  (assert-false (= 2 3))
-  (assert-error division-by-zero (/ 1 0))
-  (let ((a 2)
-	(b 1))
-    (assert-false (< a b)))
-  (let ((a "abc")
-	(b "ABCD"))
-    (assert-true (string-equal a b))
-    (assert-true (string-equal (concatenate 'string a b)
-			       (format nil "~A ~A" b a))))
-  (assert nil)
-  (assert-error error
-		(error "some error"))
-)
+
