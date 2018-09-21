@@ -46,21 +46,43 @@ will be defined."
 	 :initform *current-test*
 	 :type (or null symbol)))
   (:documentation "Parent condition for the conditions in the scrutiny package."))
+
 (define-condition test-pass (test-condition)
   ())
-(define-condition test-fail (test-condition)
+
+(define-condition test-fail (warning test-condition)
   ((expected :reader test-condition-expected
 	     :initarg :expected)
    (received :reader test-condition-received
 	     :initarg :received)
    (arguments :reader test-condition-arguments
 	      :initarg :arguments))
+  (:report report-test-fail)
   (:documentation "Condition designating a failed assertion"))
-(define-condition test-error (test-condition)
+
+(defun report-test-fail (f stream)
+  (declare (type test-fail f))
+  (format stream "  Failed: ~S~%" (test-condition-code f))
+  (mapcar (lambda (operand arg)
+	    (unless (equal operand arg)
+	      (format t "      ~S~%" operand)
+	      (format t "        => ~S~%" arg)))
+	  (cdr (test-condition-code f))
+	  (test-condition-arguments f))
+  (format t "    Expected: ~A~%" (test-condition-expected f))
+  (format t "    Got:      ~A~%" (test-condition-received f)))
+
+(define-condition test-error (warning test-condition)
   ((error :initarg :error
 	  :reader test-condition-error
 	  :type error))
+  (:report report-assertion-fail)
   (:documentation "Condition designating a non-asserted error."))
+
+(defun report-assertion-fail (e stream)
+  (declare (type test-error e))
+  (format stream "  Error:  ~A~%" (test-condition-code e))
+  (format stream "    Msg:  ~A~%" (test-condition-error e)))
 
 (defun test-report (tests-start-time num-passed failed errors)
   "Report the results of the tests--printed to stdout."
@@ -121,8 +143,7 @@ test."
 		 (handle-assertion-error (e)
 		   (declare (type test-error e))
 		   (register-fail)
-		   (format t "  Error:  ~A~%" (test-condition-code e))
-		   (format t "    Msg:  ~A~%" (test-condition-error e))
+		   (report-assertion-fail e t)
 		   (push e errors)
 		   ;; go to next test
 		   (return-from break))
@@ -137,15 +158,6 @@ test."
 		 (handle-fail (f)
 		   (declare (type test-fail f))
 		   (register-fail)
-		   (format t "  Failed: ~S~%" (test-condition-code f))
-		   (mapcar (lambda (operand arg)
-			     (unless (equal operand arg)
-			       (format t "      ~S~%" operand)
-			       (format t "        => ~S~%" arg)))
-			   (cdr (test-condition-code f))
-			   (test-condition-arguments f))
-		   (format t "    Expected: ~A~%" (test-condition-expected f))
-		   (format t "    Got:      ~A~%" (test-condition-received f))
 		   (push f failed))
 		 (handle-pass (p)
 		   (declare (type test-pass p)
@@ -209,7 +221,7 @@ assertion passes, fails, or errors."
        (signal 'test-pass :code code))
       ((or (and expected (not result))
 	   (and (not expected) result))
-       (signal 'test-fail :code code :arguments arguments :expected expected :received result))
+       (warn 'test-fail :code code :arguments arguments :expected expected :received result))
       ((and (not expected) (not result))
        (signal 'test-pass :code code)))))
 
