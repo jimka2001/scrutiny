@@ -32,10 +32,11 @@ a test failure.")
   "Define a test.  A function of the same name with empty lambda list 
 will be defined."
   (declare (type symbol test-name))
-  `(progn
-     (pushnew ',test-name *tests*)
-     (defun ,test-name ()
-       ,@body)))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (progn
+       (pushnew ',test-name *tests*)
+       (defun ,test-name ()
+	 ,@body))))
 
 (define-condition test-condition ()
   ((code :initarg :code
