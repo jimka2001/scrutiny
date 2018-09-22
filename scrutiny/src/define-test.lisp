@@ -240,13 +240,13 @@ assertion passes, fails, or errors."
 		',code))
     (t
      `(test-for t
-		#'not-null
+		#'non-null
 		(lambda ()
 		  (list ,code))
 		',code))))
 		
-
-
+;; TODO (assert-false t) raises an error stand alone, but (assert-true nil) does not,
+;;  this inconsistency needs to be fixed.
 (defmacro assert-false (code)
   "E.g. (assert-false (< 4 3))"
   (typecase code

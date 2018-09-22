@@ -43,4 +43,8 @@
 			       (format nil "~A~A" a b))))
   (assert-error error
 		(error "some error"))
+
+  (assert-true t)
+  (assert-false nil)
+
 )
