@@ -5,7 +5,8 @@
 Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.com/OdonataResearchLLC/lisp-unit). 
 
 ## API
-    
+
+### Defining tests    
 * `define-test` -- defines a test and a 0-ary function of the same name.  This and other tests may be run by calling `(run-tests)`
 * `shadow-all-symbols` -- Import un-exported symbols from one package into another, typically into the test package.
 ```
@@ -20,8 +21,12 @@ Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.
 * `assert-error` -- assert that evaluating a given expression signals a named condition   E.g.,   
 `(assert-error error (= (f a b) (g c d)))`  
 `(assert-error my-condition (format (f a b) (g c d)))`
+
+### Running tests    
+
 * `run-tests` -- runs all loaded tests by default.  `:tests` specifies a test-name or list thereof to run. `:break-on-error` specifies to go into the debugger (or otherwise default error handler) if an error condition is triggered.  Otherwise test is simply marked as failed and reported later.
 * `run-1-test` -- like `run-tests` but runs a single test. `:break-on-error` can be used as well
+* `run-failed-tests -- run the tests which failed the previous run, you may continue calling `run-package-tests` until all the violations are gone.
 * `run-package-tests` -- run tests whose name is the designated package or list of packages.  E.g.,  
   `(run-package-tests "MY-PACKAGE")`  
   `(run-package-tests '(:pack1 :pack2) :break-on-error t)`
