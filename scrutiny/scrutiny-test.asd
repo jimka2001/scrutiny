@@ -22,6 +22,7 @@
 
 (asdf:defsystem :scrutiny-test
   :version "1.0"
+  :author "Jim Newton"
   :description "Test cases for scrutiny package"
   :license "MIT"
   :depends-on ()

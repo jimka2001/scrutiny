@@ -22,6 +22,7 @@
 
 (asdf:defsystem :scrutiny
   :version "1.0"
+  :author "Jim Newton"
   :description "Unit Test Facility, similar but simpler then lisp-unit.  Slime-compatible"
   :license "MIT"
   :depends-on ()
