@@ -21,7 +21,7 @@
 
 
 (asdf:defsystem :scrutiny-test
-  :version "1.0"
+  :version (:read-file-form "../version.lisp")
   :author "Jim Newton"
   :description "Test cases for scrutiny package"
   :license "MIT"
