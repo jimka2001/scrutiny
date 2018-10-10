@@ -35,8 +35,9 @@ Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.
 
 scrutiny supports severel types of development using slime.
     
-* `M-.` -- `slime-edit-definition` -- since tests are defined symbols as functions, `M-.` works normally, causing emacs to visit the file containing the defintion and to lookup the definition of the name at the point.
+* `M-.` -- `slime-edit-definition` -- Since tests are defined symbols as functions, `M-.` works normally, causing emacs to visit the file containing the defintion and to lookup the definition of the name at the point.
 * `C-c C-c` -- `slime-compile-defun`  -- Compile the test at the point, but don't run the test.   Postfix arguments work exactly the same.  If there are compiler errors or warnings, they will be displayed in the buffer as you expect when compiling a normal function with `C-c C-c`.
+* `C-c C-w C-c` -- `slime-who-calls` -- Find all call-sites of the symbol at the point.  If the symbol is called from inside tests, those call-sites are also found and displayed.
 * Backtrace -- running tests with `:break-on-error t`, makes the backtrace available so you can debug as you normally would.
 
 ### Debugging Tests
