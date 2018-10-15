@@ -25,7 +25,7 @@
   :author "Jim Newton"
   :description "Test cases for scrutiny package"
   :license "MIT"
-  :depends-on ()
+  :depends-on (scrutiny)
   :components
   ((:module "src"
     :components

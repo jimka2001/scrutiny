@@ -25,7 +25,7 @@
   :author "Jim Newton"
   :description "Unit Test Facility, similar but simpler then lisp-unit.  Slime-compatible"
   :license "MIT"
-  :depends-on ()
+  :depends-on (adjuvant)
   :components
   ((:module "src"
     :components
