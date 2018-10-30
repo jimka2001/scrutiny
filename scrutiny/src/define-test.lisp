@@ -28,6 +28,9 @@ registered, presumably with DEFINE-TEST.")
 default error handler) or whether to capture the error and treat it as 
 a test failure.")
 
+
+(defvar *assertion-index* nil)
+
 (defmacro define-test (test-name &body body)
   "Define a test.  A function of the same name with empty lambda list 
 will be defined."
@@ -35,8 +38,13 @@ will be defined."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (progn
        (pushnew ',test-name *tests*)
-       (defun ,test-name ()
+       (defun ,test-name (&aux (*assertion-index* 0))
 	 ,@body))))
+
+(defun next-index ()
+  (if *assertion-index*
+      (incf *assertion-index*)
+      nil))
 
 (define-condition test-condition ()
   ((code :initarg :code
@@ -45,7 +53,10 @@ will be defined."
    (test :initarg :test
 	 :reader test-condition-test
 	 :initform *current-test*
-	 :type (or null symbol)))
+	 :type (or null symbol))
+   (index :reader test-condition-index
+	  :initform (next-index)
+	  :type (or null unsigned-byte)))
   (:documentation "Parent condition for the conditions in the scrutiny package."))
 
 (define-condition test-pass (test-condition)
@@ -63,6 +74,8 @@ will be defined."
 
 (defun report-test-fail (f stream)
   (declare (type test-fail f))
+  (when (test-condition-index f)
+    (format stream "  Index:  ~D~%" (test-condition-index f)))
   (format stream "  Failed: ~S~%" (test-condition-code f))
   (mapcar (lambda (operand arg)
 	    (unless (equal operand arg)
