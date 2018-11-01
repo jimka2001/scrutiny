@@ -131,8 +131,10 @@ will be defined."
 	   (format t "~D hours~%" (/ elapsed 60.0 60.0))))))
 
 (defvar *failed-tests* nil)
+(defvar *running-tests* nil "list of tests being run as opposed to all that are defined.  This variable
+is NIL outside the dynamic extend of RUN-TESTS")
 
-(defun run-tests (&key ((:tests *tests*) *tests*) ((:break-on-error *break-on-error*) *break-on-error*))
+(defun run-tests (&key ((:tests *tests*) *tests*) ((:break-on-error *break-on-error*) *break-on-error*) &aux (*running-tests* *tests*))
   "Run all the defined tests, and print a report.  If :TESTS is
 provided, only the specified tests will be run.  If :break-on-error is
 t (nil is default), then an error evokes the normall error hanlder,
@@ -219,13 +221,15 @@ assertion passes, fails, or errors."
 	   (type (function () list) gen-arguments)
 	   (type function test-function))
   (let* ((arguments (handler-bind ((error (lambda (e)
-					    (unless *break-on-error*
+					    ;; *tests* will be empty if we are running the test function stand-alone
+					    ;; i.e., without calling run-tests
+					    (when (and *running-tests* (not *break-on-error*))
 					      (signal 'test-error :error e :code code)
 					      ;; exit the test because of error
 					      (return-from test-for)))))
 		      (funcall gen-arguments)))
 	 (result (handler-bind ((error (lambda (e)
-					 (unless *break-on-error*
+					 (when (and *running-tests* (not *break-on-error*))
 					   (signal 'test-error :error e :code code)
 					   ;; exit the test because of error
 					   (return-from test-for)))))
