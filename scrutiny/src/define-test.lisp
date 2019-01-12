@@ -111,6 +111,9 @@ will be defined."
   (format t "TOTAL TESTS: ~D~%" (length *tests*))
   (format t "ASSERTIONS PASSED: ~D~%" num-passed)
   (format t "ASSERTIONS FAILED: ~D~%" (length failed))
+  ;; TODO - we would also like to report expected failures
+  ;;    report if any of the failed tests were expected
+  ;;    and report whether any of the expected failures unexpectedly passed
   (let (tests-failed)
     (dolist (f failed)
       (pushnew (test-condition-test f) tests-failed))
@@ -292,6 +295,7 @@ raised."
        (funcall thunk)))
     conditions))
 
+;; TODO - this macro should be renamed to assert-signal
 (defmacro assert-error (error-type-specifier expr)
   "E.g., (assert-error division-by-zero (/ 3 0))"
   `(assert-true (find ',error-type-specifier
