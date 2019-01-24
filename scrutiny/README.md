@@ -9,7 +9,7 @@ Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.
 ### Defining tests    
 * `define-test` -- defines a test and a 0-ary function of the same name.  This and other tests may be run by calling `(run-tests)`
 * `shadow-all-symbols` -- Import un-exported symbols from one package into another, typically into the test package.
-```
+```lisp
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (shadow-all-symbols :package-from :cl-robdd-analysis
                       :package-into :cl-robdd-analysis-test))
@@ -52,7 +52,7 @@ you may provide the argument `:break-on-error` as follows, to get a backtrace.
 You can use normal slime debugging from that point.
 
 
-````
+~~~~
 MY-APP> (run-1-test 'scrutiny::scrutiny-1 :break-on-error t)
 
 The assertion NIL failed.
@@ -71,7 +71,7 @@ Backtrace:
   3: (SCRUTINY:RUN-1-TEST SCRUTINY::SCRUTINY-1 :BREAK-ON-ERROR T)
   4: (SB-INT:SIMPLE-EVAL-IN-LEXENV (SCRUTINY:RUN-1-TEST (QUOTE SCRUTINY::SCRUTINY-1) :BREAK-ON-ERROR T) #<NULL-LEXENV>)
   5: (EVAL (SCRUTINY:RUN-1-TEST (QUOTE SCRUTINY::SCRUTINY-1) :BREAK-ON-ERROR T))
-````
+~~~~
 
 
 
@@ -111,19 +111,19 @@ Tests are normally written in their own package, but scrutiny makes absolutely
 no effort to enforce this.  A useful pattern is the following, defining an application
 in a package, `"MY-APPLICATION"` and the tests in `"MY-APPLICATION-TEST"`.
 
-````
+```lisp
 (defpackage :my-application
   (:use :cl ...)
   (:export "FUN1" "FUN2" "FUN3"))
 
 ;; application code here
-````
+```
 
 The definition of the `"MY-APPLICATION-TEST"` package typically goes
 into a differnet file, but of course may go in the same file if you
 like.
 
-````
+```lisp
 (defpackage :my-application-test
   (:use :cl :my-application))
 
@@ -134,8 +134,7 @@ like.
 (let ((secret-value "xyzzy"))
   (define-test test2
     (assert-true (string< secret-value (fun3 "hello")))))
-
-````
+```
 
 Sometimes you want to test the API of a package, and sometimes you
 want to test the internals.  If you want to test the API, simply
@@ -151,7 +150,7 @@ symbols of `:my-application`.  In this case, call the function
 package into another.
 
 
-````
+```lisp
 (defpackage :my-application-test2
   (:use :cl :my-application))
 
@@ -169,13 +168,13 @@ package into another.
   (define-test test2
     (assert-true (my-cmp "xyzzy" (fun-internal-3 "hello")))))
 
-````
+```
 
 
 ## Running the Tests
 
 When the tests run, output such as the following is printed to `*standard-output*`:
-```
+~~~~
 Summary of tests:
 PACKAGES: (SCRUTINY 2D-ARRAY-TEST DISPATCH-TEST CL-ROBDD-TEST LISP-TYPES-TEST
            LISP-TYPES-BAKER-ANALYSIS NDFA-TEST RTE-REGEXP-TEST RTE-TEST)
@@ -188,9 +187,9 @@ ASSERTIONS FAILED: 4
 ERRORS: 1
   SCRUTINY::SCRUTINY-1
 ELAPSED TIME: 12 minutes 22 seconds
-```
+~~~~
 While tests are running, incremental output will be printed to `*standard-output*` such as the following.
-```
+~~~~
 Running tests from packages: (SCRUTINY 2D-ARRAY-TEST DISPATCH-TEST
                               CL-ROBDD-TEST LISP-TYPES-TEST
                               LISP-TYPES-BAKER-ANALYSIS NDFA-TEST
@@ -210,10 +209,10 @@ Finished: Thu Sep 20 12:06:59 2018
 Starting: Thu Sep 20 12:06:59 2018
 Running: 5/181 RTE-TEST::TEST/DESTRUCTURING-CASE-2-A
 Finished: Thu Sep 20 12:06:59 2018
-```
+~~~~
 
 Here is an example of the output if a test assertion fails.
-```
+```lisp
 (define-test scrutiny-1
   (assert-false (= 1 2))
   (assert-false (= 1 3))
@@ -233,7 +232,7 @@ Here is an example of the output if a test assertion fails.
 		(error "some error")))
 ```
 The test can be run with `(run-1-test 'scrutiny-1)` to see the following output.  Notice that when test assertions fail, not only the unevaluated arguments are shown but their values, if different.
-```
+~~~~
 Running tests from packages: (SCRUTINY)
 Starting: Thu Sep 20 12:18:25 2018
 Running: 1/1 SCRUTINY::SCRUTINY-1
@@ -262,7 +261,7 @@ ASSERTIONS FAILED: 2
   2 failed assertions in SCRUTINY::SCRUTINY-1
 ERRORS: 0
 ELAPSED TIME: 0 seconds
-```
+~~~~
 
 
 
@@ -273,7 +272,7 @@ I found my unit-testing needs were diverging from what was offered in lisp-unit,
 
 ## License
 
-```
+~~~~
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation
 files (the "Software"), to deal in the Software without restriction,
@@ -292,4 +291,5 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
+~~~~
+
