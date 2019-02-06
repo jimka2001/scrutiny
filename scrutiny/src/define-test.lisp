@@ -201,17 +201,22 @@ test."
   "Run one test and print a report."
   (run-tests :tests (list test-name) :break-on-error *break-on-error*))
 
-(defun run-package-tests (packages  &key ((:break-on-error *break-on-error*) *break-on-error*))
+(defun run-package-tests (packages &key (recursive nil) ((:break-on-error *break-on-error*) *break-on-error*))
   "Run all the tests whose name is in one of the spedified packages.
-PACAKGES is a package designator, compatible with CL:DO-SYMBOLS, or
-list of package designators."
+ PACAKGES is a package designator, compatible with CL:DO-SYMBOLS, or
+ list of package designators.
+ :RECURSIVE boolean (default false) whether to include packages in the use-list recursively"
   (let (package-tests)
-    (dolist (package (if (listp packages)
-			 packages
-			 (list packages)))
-      (do-symbols (name package)
-	(when (member name *tests*)
-	  (pushnew name package-tests))))
+    (labels ((walk-package (package)
+               (do-symbols (name package)
+                 (when (member name *tests*)
+                   (pushnew name package-tests)))
+               (when recursive
+                 (mapc #'walk-package (package-use-list package)))))
+      (dolist (package (if (listp packages)
+                           packages
+                           (list packages)))
+        (walk-package package)))
     (run-tests :tests package-tests :break-on-error *break-on-error*)))
 
 (defun test-for (expected test-function gen-arguments code)
