@@ -23,6 +23,9 @@
 
 (defvar *tests* nil "list of tests, symbols which have been 
 registered, presumably with DEFINE-TEST.")
+(defvar *expected-failing-tests* nil "list of tests, symbols,
+ which are expected to fail.  These are tests which probably
+ need to fix, but nobody has done it yet.")
 (defvar *current-test* nil "The current test being run.")
 (defvar *break-on-error* nil "Whether to break into the debugger (or 
 default error handler) or whether to capture the error and treat it as 
@@ -98,8 +101,11 @@ will be defined."
   (format stream "  Error:  ~A~%" (test-condition-code e))
   (format stream "    Msg:  ~A~%" (test-condition-error e)))
 
-(defun test-report (tests-start-time num-passed failed errors)
-  "Report the results of the tests--printed to stdout."
+(defun test-report (tests-start-time num-passed failed errors
+                    &aux (num-tests-passed 0) (num-tests-failed-unexpected 0) (num-tests-failed-expected 0))
+  "Report the results of the tests--printed to stdout.
+ FAILED is a list of test-fail conditions.
+ RETURNS the number (integer) of expected failed tests, 0 means success."
   (format t "------------------~%")
   (format t "Summary of tests:~%")
   (format t "PACKAGES: ~A~%" (let (packages)
@@ -109,18 +115,30 @@ will be defined."
 					    :test #'string=)))
 			       packages))
   (format t "TOTAL TESTS: ~D~%" (length *tests*))
+  (dolist (test *tests*)
+    (cond
+      ((not (find test failed :key #'test-condition-test))
+       (incf num-tests-passed))
+      ((expected-failure test)
+       (incf num-tests-failed-expected))
+      (t
+       (incf num-tests-failed-unexpected))))
+  (format t "PASSED TESTS:  ~D~%" num-tests-passed)
+  (format t "FAILED EXPECTED:  ~D~%" num-tests-failed-expected)
+  (format t "FAILED UNEXPECTED:  ~D~%" num-tests-failed-unexpected)  
   (format t "ASSERTIONS PASSED: ~D~%" num-passed)
   (format t "ASSERTIONS FAILED: ~D~%" (length failed))
-  ;; TODO - we would also like to report expected failures
-  ;;    report if any of the failed tests were expected
-  ;;    and report whether any of the expected failures unexpectedly passed
   (let (tests-failed)
     (dolist (f failed)
       (pushnew (test-condition-test f) tests-failed))
-    (dolist (f tests-failed)
-      (let ((*package* (find-package :keyword)))
-	(format t "  ~D failed assertions in ~S~%"
-		(count f failed :key #'test-condition-test ) f))))
+    (let ((*package* (find-package :keyword)))
+      (dolist (f tests-failed)
+        (cond ((expected-failure f)
+               (format t "  ~D expected failed assertions in ~S~%"
+                       (count f failed :key #'test-condition-test ) f))
+              (t
+               (format t "  ~D failed assertions in ~S~%"
+                       (count f failed :key #'test-condition-test ) f))))))
   (format t "ERRORS: ~D~%" (length errors))
   (dolist (f errors)
     (format t "  ~S~%" (test-condition-test f)))
@@ -131,7 +149,9 @@ will be defined."
 	  ((< elapsed (* 60 60))
 	   (format t "~D minutes ~D seconds~%" (truncate elapsed 60) (mod elapsed 60)))
 	  (t
-	   (format t "~D hours~%" (/ elapsed 60.0 60.0))))))
+	   (format t "~D hours~%" (/ elapsed 60.0 60.0)))))
+  
+  num-tests-failed-unexpected)
 
 (defvar *failed-tests* nil)
 (defvar *running-tests* nil "list of tests being run as opposed to all that are defined.  This variable
@@ -350,4 +370,12 @@ raised."
 
 
 
+;; *expected-failing-tests*
+(defun expected-failure (test-name)
+  (and (member test-name *expected-failing-tests*) t))
 
+(defun (setf expected-failure) (value test-name)
+  (if value
+      (pushnew test-name *expected-failing-tests*)
+      (setf *expected-failing-tests* (remove test-name *expected-failing-tests*)))
+  value)

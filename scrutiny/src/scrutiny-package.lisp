@@ -1,4 +1,4 @@
-;; Copyright (c) 2018 EPITA Research and Development Laboratory
+;; Copyright (c) 2018,19 EPITA Research and Development Laboratory
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining
 ;; a copy of this software and associated documentation
@@ -27,6 +27,7 @@
    "ASSERT-TRUE"
    "ASSERT-ERROR"
    "ASSERT-FALSE"
+   "EXPECTED-FAILURE"
    "RUN-1-TEST"
    "RUN-FAILED-TESTS"
    "RUN-PACKAGE-TESTS"
