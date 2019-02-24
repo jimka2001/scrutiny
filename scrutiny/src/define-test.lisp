@@ -239,7 +239,7 @@ test."
         (walk-package package)))
     (run-tests :tests package-tests :break-on-error *break-on-error*)))
 
-(defun test-for (expected test-function gen-arguments code)
+(defun test-for (expected test-function gen-arguments code &key assert)
   "Internal function used by ASSERT-TRUE and ASSERT-FALSE.
 evaluates the arguments of the test expression, then applies
 the testing function to the arguments.  Raises a condition
@@ -247,7 +247,8 @@ whose type a subtype TEST-CONDITION, depending on whether the
 assertion passes, fails, or errors."
   (declare (type (member t nil) expected)
 	   (type (function () list) gen-arguments)
-	   (type function test-function))
+	   (type function test-function)
+           (ignore assert))
   (let* ((arguments (handler-bind ((error (lambda (e)
 					    ;; *tests* will be empty if we are running the test function stand-alone
 					    ;; i.e., without calling run-tests
@@ -274,21 +275,25 @@ assertion passes, fails, or errors."
 (defun non-null (object)
   (not (null object)))
 
-(defmacro assert-true (code)
+(defmacro assert-true (code &rest assert-args)
   "E.g. (assert-true (> 4 3))"
   (typecase code
     (cons
      `(test-for t
-		(function ,(car code))
-		(lambda ()
-		  (list ,@(cdr code)))
-		',code))
-    (t
-     `(test-for t
-		#'non-null
-		(lambda ()
-		  (list ,code))
-		',code))))
+                (function ,(car code))
+                (lambda ()
+                  (list ,@(cdr code)))
+                ',code
+                :assert (lambda ()
+                          (assert nil ,@assert-args))))
+      (t
+       `(test-for t
+                  #'non-null
+                  (lambda ()
+                    (list ,code))
+                  ',code
+                  :assert (lambda ()
+                             (assert nil ,@assert-args))))))
 		
 ;; TODO (assert-false t) raises an error stand alone, but (assert-true nil) does not,
 ;;  this inconsistency needs to be fixed.
