@@ -21,6 +21,12 @@ Slime-friendly Unit Testing package, based loosely on lisp-unit (https://github.
 * `assert-error` -- assert that evaluating a given expression signals a named condition   E.g.,   
 `(assert-error error (= (f a b) (g c d)))`  
 `(assert-error my-condition (format (f a b) (g c d)))`
+* `(setf expected-failure)` -- annotate this this test is a known failure.
+```lisp
+(setf (expected-failure 'baker/decompose-2) t)
+(define-test baker/decompose-2
+  (test-baker nil))
+```
 
 ### Running tests    
 
