@@ -243,7 +243,7 @@ test."
   "Internal function used by ASSERT-TRUE and ASSERT-FALSE.
 evaluates the arguments of the test expression, then applies
 the testing function to the arguments.  Raises a condition
-whose type a subtype TEST-CONDITION, depending on whether the
+whose type is a subtype TEST-CONDITION, depending on whether the
 assertion passes, fails, or errors."
   (declare (type (member t nil) expected)
 	   (type (function () list) gen-arguments)
