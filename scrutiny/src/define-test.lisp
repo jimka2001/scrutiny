@@ -34,6 +34,41 @@ a test failure.")
 
 (defvar *assertion-index* nil)
 
+(defun group-by (sequence &key (key #'identity) (test #'eql))
+"Create a car/cadr alist by applying a key function to every element of a sequence
+ E.g., to group the lists in an array by length.
+  PKG> (group-by #((1) (1 2) (3) (1 2 3) (3 4)) :key #'length)
+  ==> ((3 ((1 2 3)))
+       (2 ((3 4) (1 2)))
+       (1 ((3) (1))))
+ E.g., to group strings together in `string-equal` case-independent equal lists.
+  PKG> (group-by list-of-strings :key #'identity :test #'string-equal)
+ If there are duplicates in the input list, there will be duplicates in some the output
+ lists. I.e., the alist is formed as if by push, not pushnew, so there is no way
+ to specify an equivalence function for the values."
+  (declare (type sequence sequence)
+           (type (function (t) t) key)
+           (type (function (t t) t) test))
+  (let (alist)
+    (map nil (lambda (item &aux (index (funcall key item)) (hit (assoc index alist :test test)))
+	       (if hit
+		   (push item (car (cdr hit)))
+		   (push (list index (list item)) alist)))
+	 sequence)
+    alist))
+
+(defun encode-time (&optional (time (get-universal-time)) &aux (decoded-time (multiple-value-list (decode-universal-time time))))
+  "Create a string similar to the UNIX date command: e.g., \"Thu Aug  3 10:39:18 2017\""
+  (destructuring-bind (second minute hour date month year day-of-week ;; (0 = Monday)
+                       daylight-savings-times ;; T (daylight savings times) or NIL (standard time)
+                       timezone) decoded-time
+    (declare (ignore timezone daylight-savings-times))
+    (let ((day-of-week (aref #("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun") day-of-week))
+          (month (aref #("no-month" "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec") month)))
+      (with-output-to-string (str)
+        (format str "~A ~A" day-of-week month)
+        (format str " ~2D ~2D:~2,'0D:~2,'0D ~S" date hour minute second year)))))
+
 (defmacro define-test (test-name &body body)
   "Define a test.  A function of the same name with empty lambda list 
 will be defined."

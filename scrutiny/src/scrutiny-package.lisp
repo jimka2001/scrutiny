@@ -21,7 +21,7 @@
 
 
 (defpackage :scrutiny
-  (:use :cl :adjuvant)
+  (:use :cl)
   (:export
    "DEFINE-TEST"
    "ASSERT-TRUE"
