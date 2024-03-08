@@ -59,7 +59,10 @@ will be defined."
 	 :type (or null symbol))
    (index :reader test-condition-index
 	  :initform (next-index)
-	  :type (or null unsigned-byte)))
+	  :type (or null unsigned-byte))
+   (tag :reader test-condition-tag
+        :initarg :tag
+        :initform :unknown))
   (:documentation "Parent condition for the conditions in the scrutiny package."))
 
 (define-condition test-pass (test-condition)
@@ -78,16 +81,18 @@ will be defined."
 (defun report-test-fail (f stream)
   (declare (type test-fail f))
   (when (test-condition-index f)
-    (format stream "  Index:  ~D~%" (test-condition-index f)))
-  (format stream "  Failed: ~S~%" (test-condition-code f))
+    (format stream "~&     Index:  ~D~%" (test-condition-index f)))
+  (if (not (eq :unknown (test-condition-tag f)))
+      (format t "       Tag: ~A~%" (test-condition-tag f)))
+  (format stream "    Failed: ~S~%" (test-condition-code f))
   (mapcar (lambda (operand arg)
 	    (unless (equal operand arg)
 	      (format t "      ~S~%" operand)
 	      (format t "        => ~S~%" arg)))
 	  (cdr (test-condition-code f))
 	  (test-condition-arguments f))
-  (format t "    Expected: ~A~%" (test-condition-expected f))
-  (format t "    Got:      ~A~%" (test-condition-received f)))
+  (format t "  Expected: ~A~%" (test-condition-expected f))
+  (format t "       Got: ~A~%" (test-condition-received f)))
 
 (define-condition test-error (warning test-condition)
   ((error :initarg :error
@@ -174,6 +179,7 @@ test."
 							    (list (package-name package)
 								  (length names)))
 							  (group-by *tests* :key #'symbol-package)))
+    (format t "Break-on-error = ~A~%" *break-on-error*)
     (dolist (*current-test* *tests*)
       (setf *failed-tests* (remove *current-test* *failed-tests* :test #'eq))
       (block break
@@ -221,6 +227,7 @@ test."
   "Run one test and print a report."
   (run-tests :tests (list test-name) :break-on-error *break-on-error*))
 
+
 (defun run-package-tests (packages &key (recursive nil) ((:break-on-error *break-on-error*) *break-on-error*))
   "Run all the tests whose name is in one of the spedified packages.
  PACAKGES is a package designator, compatible with CL:DO-SYMBOLS, or
@@ -239,7 +246,7 @@ test."
         (walk-package package)))
     (run-tests :tests package-tests :break-on-error *break-on-error*)))
 
-(defun test-for (expected test-function gen-arguments code &key assert)
+(defun test-for (expected test-function gen-arguments code &key assert (tag :unknown))
   "Internal function used by ASSERT-TRUE and ASSERT-FALSE.
 evaluates the arguments of the test expression, then applies
 the testing function to the arguments.  Raises a condition
@@ -253,51 +260,60 @@ assertion passes, fails, or errors."
 					    ;; *tests* will be empty if we are running the test function stand-alone
 					    ;; i.e., without calling run-tests
 					    (when (and *running-tests* (not *break-on-error*))
-					      (signal 'test-error :error e :code code)
+					      (signal 'test-error :error e :code code :tag tag)
 					      ;; exit the test because of error
 					      (return-from test-for)))))
 		      (funcall gen-arguments)))
 	 (result (handler-bind ((error (lambda (e)
 					 (when (and *running-tests* (not *break-on-error*))
-					   (signal 'test-error :error e :code code)
+					   (signal 'test-error :error e :code code :tag tag)
 					   ;; exit the test because of error
 					   (return-from test-for)))))
 		   (apply test-function arguments))))
     (cond
       ((and expected result)
-       (signal 'test-pass :code code))
+       (signal 'test-pass :code code :tag tag))
       ((or (and expected (not result))
 	   (and (not expected) result))
-       (warn 'test-fail :code code :arguments arguments :expected expected :received result))
+       (warn 'test-fail :code code :arguments arguments :expected expected :received result :tag tag))
       ((and (not expected) (not result))
-       (signal 'test-pass :code code)))))
+       (signal 'test-pass :code code :tag tag)))))
 
 (defun non-null (object)
   (not (null object)))
 
-(defmacro assert-true (code &rest assert-args)
-  "E.g. (assert-true (> 4 3))"
-  (typecase code
-    (cons
-     `(test-for t
-                (function ,(car code))
-                (lambda ()
-                  (list ,@(cdr code)))
-                ',code
-                :assert (lambda ()
-                          (assert nil ,@assert-args))))
+
+(defmacro assert-true (code  &rest assertion-args &key (tag :unknown tagp))
+  "E.g. (assert-true (> 4 3))
+        (assert-true (> 4 3) :tag :assertion-101)
+        (assert-true (> 4 3) (a b c) \"a=~A\" a)
+        (assert-true (> 4 3) :tag :assertion-102 (a b c) \"a=~A\" a)"
+  (let ((assertion-args (if tagp
+                            (cddr assertion-args)
+                            assertion-args)))
+    (typecase code
+      (cons
+       `(test-for t
+                  (function ,(car code))
+                  (lambda ()
+                    (list ,@(cdr code)))
+                  ',code
+                  :tag ',tag
+                  :assert (lambda ()
+                            (assert nil ,@assertion-args))))
       (t
        `(test-for t
                   #'non-null
                   (lambda ()
                     (list ,code))
                   ',code
+                  :tag ',tag
                   :assert (lambda ()
-                             (assert nil ,@assert-args))))))
+                            (assert nil ,@assertion-args)))))))
 		
 ;; TODO (assert-false t) raises an error stand alone, but (assert-true nil) does not,
 ;;  this inconsistency needs to be fixed.
-(defmacro assert-false (code)
+(defmacro assert-false (code &key (tag :unknown))
   "E.g. (assert-false (< 4 3))"
   (typecase code
     (cons
@@ -305,13 +321,15 @@ assertion passes, fails, or errors."
 		(function ,(car code))
 		(lambda ()
 		  (list ,@(cdr code)))
-		',code))
+		',code
+                :tag ',tag))
     (t
      `(test-for t
 		#'null
 		(lambda ()
 		  (list ,code))
-		',code))))
+		',code
+                :tag ',tag))))
 
 (defun raises (thunk)
   "Internal function which calls this given function, ignores its
@@ -326,13 +344,14 @@ raised."
     conditions))
 
 ;; TODO - this macro should be renamed to assert-signal
-(defmacro assert-error (error-type-specifier expr)
+(defmacro assert-error (error-type-specifier expr &key (tag :unknown))
   "E.g., (assert-error division-by-zero (/ 3 0))"
   `(assert-true (find ',error-type-specifier
 		      (raises (lambda ()
 				,expr))
 		      :test (lambda (type object)
-			      (typep object type)))))
+			      (typep object type)))
+                :tag ',tag))
 
 (defun shadow-all-symbols (&key package-from package-into (verbose nil))
   (declare (type (or package keyword) package-from package-into))
