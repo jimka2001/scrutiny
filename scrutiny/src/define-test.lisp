@@ -117,7 +117,7 @@ will be defined."
   (declare (type test-fail f))
   (when (test-condition-index f)
     (format stream "~&     Index:  ~D~%" (test-condition-index f)))
-  (if (not (eq :unknown (test-condition-tag f)))
+ (if (not (eq :unknown (test-condition-tag f)))
       (format t "       Tag: ~A~%" (test-condition-tag f)))
   (format stream "    Failed: ~S~%" (test-condition-code f))
   (mapcar (lambda (operand arg)
@@ -139,6 +139,8 @@ will be defined."
 (defun report-assertion-fail (e stream)
   (declare (type test-error e))
   (format stream "  Error:  ~A~%" (test-condition-code e))
+  (when (not (eq :unknown (test-condition-tag e)))
+      (format t "    Tag: ~A~%" (test-condition-tag e)))
   (format stream "    Msg:  ~A~%" (test-condition-error e)))
 
 (defun test-report (tests-start-time num-passed failed errors
