@@ -47,4 +47,8 @@
   (assert-true t)
   (assert-false nil)
 
-)
+  (let ((a 20))
+    (assert-true t :tag 100 :message (format nil "~A" a))
+    (assert-false nil :tag 100 :message (format nil "~A" a))
+
+))
