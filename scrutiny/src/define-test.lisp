@@ -108,6 +108,8 @@ will be defined."
 	     :initarg :expected)
    (received :reader test-condition-received
 	     :initarg :received)
+   (message :reader test-condition-message
+            :initarg :message)
    (arguments :reader test-condition-arguments
 	      :initarg :arguments))
   (:report report-test-fail)
@@ -127,7 +129,9 @@ will be defined."
 	  (cdr (test-condition-code f))
 	  (test-condition-arguments f))
   (format t "  Expected: ~A~%" (test-condition-expected f))
-  (format t "       Got: ~A~%" (test-condition-received f)))
+  (format t "       Got: ~A~%" (test-condition-received f))
+  (when (test-condition-message f)
+    (format t "   Message: ~A~%" (test-condition-message f))))
 
 (define-condition test-error (warning test-condition)
   ((error :initarg :error
@@ -283,7 +287,7 @@ test."
         (walk-package package)))
     (run-tests :tests package-tests :break-on-error *break-on-error*)))
 
-(defun test-for (expected test-function gen-arguments code &key assert (tag :unknown))
+(defun test-for (expected test-function gen-arguments code &key (tag :unknown) (message (lambda () nil)))
   "Internal function used by ASSERT-TRUE and ASSERT-FALSE.
 evaluates the arguments of the test expression, then applies
 the testing function to the arguments.  Raises a condition
@@ -291,8 +295,7 @@ whose type is a subtype TEST-CONDITION, depending on whether the
 assertion passes, fails, or errors."
   (declare (type (member t nil) expected)
 	   (type (function () list) gen-arguments)
-	   (type function test-function)
-           (ignore assert))
+	   (type function test-function))
   (let* ((arguments (handler-bind ((error (lambda (e)
 					    ;; *tests* will be empty if we are running the test function stand-alone
 					    ;; i.e., without calling run-tests
@@ -312,45 +315,40 @@ assertion passes, fails, or errors."
        (signal 'test-pass :code code :tag tag))
       ((or (and expected (not result))
 	   (and (not expected) result))
-       (warn 'test-fail :code code :arguments arguments :expected expected :received result :tag tag))
+       (warn 'test-fail :code code :arguments arguments :expected expected :received result :tag tag
+             :message (funcall message)))
       ((and (not expected) (not result))
        (signal 'test-pass :code code :tag tag)))))
 
 (defun non-null (object)
   (not (null object)))
 
-
-(defmacro assert-true (code  &rest assertion-args &key (tag :unknown tagp))
+(defmacro assert-true (code &key (tag :unknown) message)
   "E.g. (assert-true (> 4 3))
         (assert-true (> 4 3) :tag :assertion-101)
-        (assert-true (> 4 3) (a b c) \"a=~A\" a)
-        (assert-true (> 4 3) :tag :assertion-102 (a b c) \"a=~A\" a)"
-  (let ((assertion-args (if tagp
-                            (cddr assertion-args)
-                            assertion-args)))
-    (typecase code
+        (assert-true (> 4 3) :message (format nil  \"a=~A\" a))
+        (assert-true (> 4 3) :tag :assertion-102 :message (format nil \"a=~A\" a))"
+  (typecase code
       (cons
        `(test-for t
                   (function ,(car code))
                   (lambda ()
                     (list ,@(cdr code)))
                   ',code
-                  :tag ',tag
-                  :assert (lambda ()
-                            (assert nil ,@assertion-args))))
+                  :message (lambda () ,message)
+                  :tag ',tag))
       (t
        `(test-for t
                   #'non-null
                   (lambda ()
                     (list ,code))
                   ',code
-                  :tag ',tag
-                  :assert (lambda ()
-                            (assert nil ,@assertion-args)))))))
+                  :message (lambda () ,message)
+                  :tag ',tag))))
 		
 ;; TODO (assert-false t) raises an error stand alone, but (assert-true nil) does not,
 ;;  this inconsistency needs to be fixed.
-(defmacro assert-false (code &key (tag :unknown))
+(defmacro assert-false (code &key (tag :unknown) message)
   "E.g. (assert-false (< 4 3))"
   (typecase code
     (cons
@@ -359,6 +357,7 @@ assertion passes, fails, or errors."
 		(lambda ()
 		  (list ,@(cdr code)))
 		',code
+                :message (lambda () ,message)
                 :tag ',tag))
     (t
      `(test-for t
@@ -366,6 +365,7 @@ assertion passes, fails, or errors."
 		(lambda ()
 		  (list ,code))
 		',code
+                :message (lambda () ,message)
                 :tag ',tag))))
 
 (defun raises (thunk)
@@ -381,13 +381,14 @@ raised."
     conditions))
 
 ;; TODO - this macro should be renamed to assert-signal
-(defmacro assert-error (error-type-specifier expr &key (tag :unknown))
+(defmacro assert-error (error-type-specifier expr &key (tag :unknown) message)
   "E.g., (assert-error division-by-zero (/ 3 0))"
   `(assert-true (find ',error-type-specifier
 		      (raises (lambda ()
 				,expr))
 		      :test (lambda (type object)
 			      (typep object type)))
+                :message (lambda () ,message)
                 :tag ',tag))
 
 (defun shadow-all-symbols (&key package-from package-into (verbose nil))
